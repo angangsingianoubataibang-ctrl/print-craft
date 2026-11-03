@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrintCraft — Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script>
+        const qs = new URLSearchParams(window.location.search);
+        const agentOverride = qs.get('agent') || localStorage.getItem('printcraft_agent_url') || '';
+        const adminLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const fallbackLocalUrl = adminLocalHost
+            ? (window.location.port === '3001' ? '' : `http://${window.location.hostname}:3001`)
+            : '';
+        const SERVER = {
+            agentUrl: agentOverride || fallbackLocalUrl
+        };
+        if (agentOverride) {
+            localStorage.setItem('printcraft_agent_url', agentOverride);
+        }
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] }, colors: { brand: { 50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81' } } } } }
+    </script>
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 99px
+        }
+
+        .fade {
+            animation: fade .3s cubic-bezier(.16, 1, .3, 1) both
+        }
+
+        @keyframes fade {
+            from {
+                opacity: 0;
+                transform: translateY(6px)
+            }
+
+            to {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        .pop {
+            animation: pop .2s cubic-bezier(.16, 1, .3, 1) both
+        }
+
+        @keyframes pop {
+            from {
+                opacity: 0;
+                transform: scale(.96)
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1)
+            }
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block
+        }
+
+        .spinner {
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255, 255, 255, .3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .6s linear infinite;
+            display: inline-block;
+            vertical-align: middle
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        .price-input,
+        .settings-input {
+            width: 100%;
+            padding: .55rem .8rem;
+            border-radius: .75rem;
+            border: 2px solid #e2e8f0;
+            font-weight: 700;
+            font-size: 14px;
+            transition: border-color .15s;
+            background: #fff
+        }
+
+        .price-input:focus,
+        .settings-input:focus {
+            outline: none;
+            border-color: #6366f1
+        }
+
+        .price-label,
+        .settings-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            margin-bottom: 4px;
+            display: block
+        }
+
+        .settings-hint {
+            font-size: 10.5px;
+            color: #94a3b8;
+            margin-top: 4px;
+            line-height: 1.4
+        }
+
+        .switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            border-radius: 99px;
+            background: #cbd5e1;
+            transition: background .15s;
+            cursor: pointer;
+            flex-shrink: 0
+        }
+
+        .switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform .15s;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .15)
+        }
+
+        .switch.on {
+            background: #4f46e5
+        }
+
+        .switch.on::after {
+            transform: translateX(20px)
+        }
+
+        .pulse-dot {
+            animation: pulseDot 1.2s ease-in-out infinite
+        }
+
+        @keyframes pulseDot {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: .4
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-lg border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <a href="/" class="flex items-center gap-2.5">
+                <div
+                    class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-brand-200">
+                    <i class="fa-solid fa-print text-sm"></i>
+                </div>
+                <div class="text-left leading-tight">
+                    <p class="text-[16px] font-extrabold text-slate-900">PrintCraft</p>
+                    <p class="text-[10px] font-semibold text-slate-400 tracking-wider uppercase">Admin Dashboard</p>
+                </div>
+            </a>
+            <div class="flex items-center gap-2">
+                <span id="agentPill"
+                    class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 text-[10px] font-bold text-slate-500">
+                    <span id="agentDot" class="dot bg-slate-400"></span><span id="agentText">Agent —</span>
+                </span>
+                <a href="/"
+                    class="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
+                    <i class="fa-solid fa-arrow-left"></i> Studio
+                </a>
+                <button id="logoutBtn" onclick="logout()"
+                    class="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800">
+                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1">
+        <section class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+            <div class="flex flex-wrap gap-2 mb-6">
+                <button id="tabDash" onclick="setTab('dash')"
+                    class="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold">Dashboard</button>
+                <button id="tabOrders" onclick="setTab('orders')"
+                    class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50">Orders</button>
+                <button id="tabPrices" onclick="setTab('prices')"
+                    class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50">Prices</button>
+                <button id="tabPrinters" onclick="setTab('printers')"
+                    class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50">Printers</button>
+                <button id="tabPayment" onclick="setTab('payment')"
+                    class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50">Payment</button>
+            </div>
+
+            <!-- DASHBOARD -->
+            <div id="viewDash">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+                    <div>
+                        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">Overview</h1>
+                        <p class="text-sm text-slate-500 mt-1">Printer health &amp; quick actions</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="checkAgent(true)"
+                            class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold hover:bg-slate-50"><i
+                                class="fa-solid fa-rotate mr-1"></i> Check agent</button>
+                        <button onclick="simulateJob()"
+                            class="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800"><i
+                                class="fa-solid fa-plus mr-1"></i> Test job</button>
+                    </div>
+                </div>
+
+                <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Printers</p>
+                        <p id="adminPrinters" class="mt-2 text-2xl font-extrabold text-slate-900">—</p>
+                        <p id="adminPrintersList" class="text-[10px] text-slate-500 mt-1 truncate"></p>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Pending payments</p>
+                        <p id="adminPending" class="mt-2 text-2xl font-extrabold text-slate-900">0</p>
+                        <p class="text-[10px] text-slate-500 mt-1">Waiting for UPI confirmation</p>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Auto UPI</p>
+                        <p id="adminAutoUpi" class="mt-2 text-sm font-bold text-slate-500">—</p>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Agent</p>
+                        <p id="adminAgentText" class="mt-2 text-sm font-bold text-slate-500">Checking…</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ORDERS -->
+            <div id="viewOrders" class="hidden">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+                    <div>
+                        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">Pending orders
+                        </h1>
+                        <p class="text-sm text-slate-500 mt-1">Live from the server. Mark cash payments as paid when the
+                            customer pays.</p>
+                    </div>
+                    <button onclick="loadPendingOrders()"
+                        class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold hover:bg-slate-50"><i
+                            class="fa-solid fa-rotate mr-1"></i> Refresh</button>
+                </div>
+                <div id="pendingList" class="space-y-3"></div>
+            </div>
+
+            <!-- PRICES -->
+            <div id="viewPrices" class="hidden">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+                    <div>
+                        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">Price settings
+                        </h1>
+                        <p class="text-sm text-slate-500 mt-1">Served live to every customer session.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="reloadPrices()"
+                            class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold hover:bg-slate-50"><i
+                                class="fa-solid fa-rotate-left mr-1"></i> Reset form</button>
+                        <button id="savePricesBtn" onclick="savePrices()"
+                            class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-lg shadow-brand-200">
+                            <i class="fa-solid fa-floppy-disk mr-1"></i> Save prices
+                        </button>
+                    </div>
+                </div>
+                <div id="pricesStatus" class="mb-4 hidden px-4 py-3 rounded-xl text-xs font-bold"></div>
+                <div class="grid lg:grid-cols-2 gap-5">
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5">
+                        <h2 class="font-bold text-slate-900 flex items-center gap-2 mb-4"><i
+                                class="fa-solid fa-id-badge text-violet-500"></i> Passport photos</h2>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div><label class="price-label">35×45 mm</label><input type="number" min="0" step="1"
+                                    data-price="passport.35x45" class="price-input"></div>
+                            <div><label class="price-label">2×2 in</label><input type="number" min="0" step="1"
+                                    data-price="passport.2x2" class="price-input"></div>
+                            <div><label class="price-label">35×35 mm</label><input type="number" min="0" step="1"
+                                    data-price="passport.35x35" class="price-input"></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5">
+                        <h2 class="font-bold text-slate-900 flex items-center gap-2 mb-4"><i
+                                class="fa-solid fa-camera-retro text-blue-500"></i> Photo prints</h2>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div><label class="price-label">4×6 in</label><input type="number" min="0" step="1"
+                                    data-price="photo.4x6" class="price-input"></div>
+                            <div><label class="price-label">5×7 in</label><input type="number" min="0" step="1"
+                                    data-price="photo.5x7" class="price-input"></div>
+                            <div><label class="price-label">6×8 in</label><input type="number" min="0" step="1"
+                                    data-price="photo.6x8" class="price-input"></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5">
+                        <h2 class="font-bold text-slate-900 flex items-center gap-2 mb-4"><i
+                                class="fa-solid fa-id-card text-amber-500"></i> ID card copy</h2>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div><label class="price-label">Colour</label><input type="number" min="0" step="1"
+                                    data-price="idcard.color" class="price-input"></div>
+                            <div><label class="price-label">Black &amp; white</label><input type="number" min="0"
+                                    step="1" data-price="idcard.bw" class="price-input"></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5">
+                        <h2 class="font-bold text-slate-900 flex items-center gap-2 mb-4"><i
+                                class="fa-solid fa-file-lines text-emerald-500"></i> Xerox / Documents</h2>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div><label class="price-label">B&amp;W per page</label><input type="number" min="0"
+                                    step="0.5" data-price="document.bw" class="price-input"></div>
+                            <div><label class="price-label">Colour per page</label><input type="number" min="0"
+                                    step="0.5" data-price="document.color" class="price-input"></div>
+                        </div>
+                        <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mt-4 mb-2">Binding (per
+                            document)</p>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div><label class="price-label">No binding</label><input type="number" min="0" step="1"
+                                    data-price="document.binding.none" class="price-input"></div>
+                            <div><label class="price-label">Corner staple</label><input type="number" min="0" step="1"
+                                    data-price="document.binding.staple" class="price-input"></div>
+                            <div><label class="price-label">Spiral binding</label><input type="number" min="0" step="1"
+                                    data-price="document.binding.spiral" class="price-input"></div>
+                            <div><label class="price-label">Thermal hardcover</label><input type="number" min="0"
+                                    step="1" data-price="document.binding.hardcover" class="price-input"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PRINTERS -->
+            <div id="viewPrinters" class="hidden">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+                    <div>
+                        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">Printer routing
+                        </h1>
+                        <p class="text-sm text-slate-500 mt-1">Choose which printer handles each service, and the
+                            default paper, colour, and media type.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="reloadPrinters()"
+                            class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold hover:bg-slate-50"><i
+                                class="fa-solid fa-rotate-left mr-1"></i> Reset form</button>
+                        <button id="savePrintersBtn" onclick="savePrinters()"
+                            class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-lg shadow-brand-200">
+                            <i class="fa-solid fa-floppy-disk mr-1"></i> Save printer routing
+                        </button>
+                    </div>
+                </div>
+                <div id="printersStatus" class="mb-4 hidden px-4 py-3 rounded-xl text-xs font-bold"></div>
+                <div id="detectedPrintersBar"
+                    class="mb-5 px-4 py-3 rounded-xl bg-blue-50 border border-blue-100 text-[11px] text-blue-800 leading-relaxed">
+                    <i class="fa-solid fa-circle-info mr-1"></i>
+                    <span class="font-bold">Detected printers:</span> <span id="detectedPrintersList">loading…</span>
+                </div>
+                <datalist id="printerList"></datalist>
+                <div class="grid lg:grid-cols-2 gap-5">
+
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5">
+                        <h2 class="font-bold text-slate-900 flex items-center gap-2 mb-1"><i
+                                class="fa-solid fa-file-lines text-emerald-500"></i> Xerox / Documents</h2>
+                        <p class="text-[11px] text-slate-500 mb-4">A4 black &amp; white copies.</p>
+                        <div class="space-y-3">
+                            <div><label class="settings-label">Printer</label><input type="text" list="printerList"
+                                    data-printer="document.name" class="settings-input" placeholder="(system default)"
+                                    autocomplete="off"></div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="settings-label">Paper</label>
+                                    <select data-printer="document.paper" class="settings-input">
+                                        <option value="auto">Auto (from client)</option>
+                                        <option value="A4">A4</option>
+                                        <option value="A5">A5</option>
+                                        <option value="Letter">Letter</option>
+                                    </select>
+                                </div>
+                                <div><label class="settings-label">Colour</label>
+                                    <select data-printer="document.color" class="settings-input">
+                                        <option value="auto">Auto (from client)</option>
+                                        <option value="bw">Black &amp; white</option>
+                                        <option value="color">Colour</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="settings-label">Media type</label>
+                                    <select data-printer="document.mediaType" class="settings-input">
+                                        <option value="auto">Auto (from client)</option>
+                                        <option value="plain">Plain paper</option>
+                                        <option value="photo">Photo paper</option>
+                                    </select>
+                                </div>
+                                <div><label class="settings-label">Orientation</label>
+                                    <select data-printer="document.orient" class="settings-input">
+                                        <option value="auto">Auto</option>
+                                        <option value="portrait">Portrait</option>
+                                        <option value="landscape">Landscape</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5">
+                        <h2 class="font-bold text-slate-900 flex items-center gap-2 mb-1"><i
+                                class="fa-solid fa-id-card text-amber-500"></i> ID card copy</h2>
+                        <p class="text-[11px] text-slate-500 mb-4">Aadhaar / PAN / Voter ID on A4.</p>
+                        <div class="space-y-3">
+                            <div><label class="settings-label">Printer</label><input type="text" list="printerList"
+                                    data-printer="idcard.name" class="settings-input" placeholder="(system default)"
+                                    autocomplete="off"></div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="settings-label">Paper</label>
+                                    <select data-printer="idcard.paper" class="settings-input">
+                                        <option value="auto">Auto (from client)</option>
+                                        <option value="A4">A4</option>
+                                        <option value="A5">A5</option>
+                                        <option value="Letter">Letter</option>
+                                    </select>
+                                </div>
+                                <div><label class="settings-label">Colour</label>
+                                    <select data-printer="idcard.color" class="settings-input">
+                                        <option value="auto">Auto (from client)</option>
+                                        <option value="color">Colour</option>
+                                        <option value="bw">Black &amp; white</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="settings-label">Media type</label>
+                                    <select data-printer="idcard.mediaType" class="settings-input">
+                                        <option value="auto">Auto (from client)</option>
+                                        <option value="plain">Plain paper</option>
+                                        <option value="photo">Photo paper</option>
+                                    </select>
+                                </div>
+                                <div><label class="settings-label">Orientation</label>
+                                    <select data-printer="idcard.orient" class="settings-input">
+                                        <option value="auto">Auto</option>
+                                        <option value="portrait">Portrait</option>
+                                        <option value="landscape">Landscape</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5">
+                        <h2 class="font-bold text-slate-900 flex items-center gap-2 mb-1"><i
+                                class="fa-solid fa-camera-retro text-blue-500"></i> Photo prints</h2>
+                        <p class="text-[11px] text-slate-500 mb-4">4×6, 5×7, 6×8 glossy photo prints.</p>
+                        <div class="space-y-3">
+                            <div><label class="settings-label">Printer</label><input type="text" list="printerList"
+                                    data-printer="photo.name" class="settings-input" placeholder="(system default)"
+                                    autocomplete="off"></div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="settings-label">Paper</label>
+                                    <select data-printer="photo.paper" class="settings-input">
+                                        <option value="auto">Auto (customer's choice)</option>
+                                        <option value="4x6">4×6 in</option>
+                                        <option value="5x7">5×7 in</option>
+                                        <option value="6x8">6×8 in</option>
+                                        <option value="10x15">10×15 cm</option>
+                                        <option value="A4">A4</option>
+                                    </select>
+                                </div>
+                                <div><label class="settings-label">Colour</label>
+                                    <select data-printer="photo.color" class="settings-input">
+                                        <option value="auto">Auto (from client)</option>
+                                        <option value="color">Colour</option>
+                                        <option value="bw">Black &amp; white</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="settings-label">Media type</label>
+                                    <select data-printer="photo.mediaType" class="settings-input">
+                                        <option value="auto">Auto (from client)</option>
+                                        <option value="photo">Photo paper</option>
+                                        <option value="glossy">Glossy</option>
+                                        <option value="matte">Matte</option>
+                                        <option value="satin">Satin</option>
+                                        <option value="plain">Plain</option>
+                                    </select>
+                                </div>
+                                <div><label class="settings-label">Orientation</label>
+                                    <select data-printer="photo.orient" class="settings-input">
+                                        <option value="auto">Auto</option>
+                                        <option value="portrait">Portrait</option>
+                                        <option value="landscape">Landscape</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5">
+                        <h2 class="font-bold text-slate-900 flex items-center gap-2 mb-1"><i
+                                class="fa-solid fa-id-badge text-violet-500"></i> Passport photos</h2>
+                        <p class="text-[11px] text-slate-500 mb-4">Tiled passport photos on 4×6 photo paper.</p>
+                        <div class="space-y-3">
+                            <div><label class="settings-label">Printer</label><input type="text" list="printerList"
+                                    data-printer="passport.name" class="settings-input" placeholder="(system default)"
+                                    autocomplete="off"></div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="settings-label">Paper</label>
+                                    <select data-printer="passport.paper" class="settings-input">
+                                        <option value="auto">Auto (customer's choice)</option>
+                                        <option value="4x6">4×6 in</option>
+                                        <option value="10x15">10×15 cm</option>
+                                        <option value="A4">A4</option>
+                                    </select>
+                                </div>
+                                <div><label class="settings-label">Colour</label>
+                                    <select data-printer="passport.color" class="settings-input">
+                                        <option value="auto">Auto (from client)</option>
+                                        <option value="color">Colour</option>
+                                        <option value="bw">Black &amp; white</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="settings-label">Media type</label>
+                                    <select data-printer="passport.mediaType" class="settings-input">
+                                        <option value="auto">Auto (from client)</option>
+                                        <option value="photo">Photo paper</option>
+                                        <option value="glossy">Glossy</option>
+                                        <option value="matte">Matte</option>
+                                        <option value="satin">Satin</option>
+                                    </select>
+                                </div>
+                                <div><label class="settings-label">Orientation</label>
+                                    <select data-printer="passport.orient" class="settings-input">
+                                        <option value="auto">Auto</option>
+                                        <option value="portrait">Portrait</option>
+                                        <option value="landscape">Landscape</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div
+                    class="mt-6 p-4 rounded-2xl bg-blue-50 border border-blue-100 text-[11px] text-blue-800 leading-relaxed">
+                    <i class="fa-solid fa-circle-info mr-1"></i>
+                    <span class="font-bold">How it works:</span> fields set to <span
+                        class="font-mono font-bold">Auto</span> defer to the customer's choice; anything else overrides
+                    it. The <span class="font-mono font-bold">Printer</span> name is always enforced. For glossy photo
+                    output, also set the photo printer's Windows driver defaults to <span class="font-mono">Photo Paper
+                        Plus Glossy II</span> + <span class="font-mono">Borderless</span>.
+                </div>
+            </div>
+
+            <!-- PAYMENT -->
+            <div id="viewPayment" class="hidden">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+                    <div>
+                        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">Payment settings
+                        </h1>
+                        <p class="text-sm text-slate-500 mt-1">UPI + cash configuration and auto-verification webhook.
+                        </p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="reloadSettings()"
+                            class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold hover:bg-slate-50"><i
+                                class="fa-solid fa-rotate-left mr-1"></i> Reload</button>
+                        <button id="saveSettingsBtn" onclick="saveSettings()"
+                            class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-lg shadow-brand-200">
+                            <i class="fa-solid fa-floppy-disk mr-1"></i> Save payment settings
+                        </button>
+                    </div>
+                </div>
+                <div id="settingsStatus" class="mb-4 hidden px-4 py-3 rounded-xl text-xs font-bold"></div>
+
+                <div class="grid lg:grid-cols-[minmax(0,1fr)_340px] gap-5">
+                    <div class="space-y-5">
+
+                        <!-- UPI details -->
+                        <div class="bg-white rounded-2xl border border-slate-200 p-5">
+                            <h2 class="font-bold text-slate-900 flex items-center gap-2 mb-4"><i
+                                    class="fa-solid fa-qrcode text-brand-500"></i> UPI details</h2>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="settings-label">UPI ID / VPA</label>
+                                    <input type="text" id="setUpiId" class="settings-input" placeholder="example@upi"
+                                        autocomplete="off">
+                                    <p class="settings-hint">Example: <span class="font-mono">yourname@okhdfcbank</span>
+                                        or <span class="font-mono">9876543210@ybl</span>.</p>
+                                </div>
+                                <div>
+                                    <label class="settings-label">Payee name</label>
+                                    <input type="text" id="setPayeeName" class="settings-input"
+                                        placeholder="Your shop name" autocomplete="off">
+                                </div>
+                                <div>
+                                    <label class="settings-label">Transaction note (optional)</label>
+                                    <input type="text" id="setNote" class="settings-input" placeholder="Print job"
+                                        maxlength="80" autocomplete="off">
+                                </div>
+                                <div>
+                                    <label class="settings-label">Currency</label>
+                                    <input type="text" id="setCurrency" class="settings-input" value="INR" maxlength="8"
+                                        autocomplete="off">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Methods -->
+                        <div class="bg-white rounded-2xl border border-slate-200 p-5">
+                            <h2 class="font-bold text-slate-900 flex items-center gap-2 mb-4"><i
+                                    class="fa-solid fa-toggle-on text-emerald-500"></i> Accepted payment methods</h2>
+                            <div class="space-y-3">
+                                <div
+                                    class="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                    <div class="min-w-0">
+                                        <p class="font-bold text-sm text-slate-900"><i
+                                                class="fa-solid fa-wallet mr-1.5 text-emerald-500"></i> Cash at counter
+                                        </p>
+                                        <p class="text-[11px] text-slate-500 mt-0.5">Customer pays at the counter.
+                                            Default method.</p>
+                                    </div>
+                                    <div id="toggleCash" class="switch" onclick="toggleSwitch('cash')" role="switch">
+                                    </div>
+                                </div>
+                                <div
+                                    class="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                    <div class="min-w-0">
+                                        <p class="font-bold text-sm text-slate-900"><i
+                                                class="fa-solid fa-qrcode mr-1.5 text-brand-500"></i> UPI QR</p>
+                                        <p class="text-[11px] text-slate-500 mt-0.5">Customer scans the QR. Works
+                                            standalone or with auto-verify.</p>
+                                    </div>
+                                    <div id="toggleUpi" class="switch" onclick="toggleSwitch('upi')" role="switch">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Auto UPI -->
+                        <div class="bg-white rounded-2xl border border-slate-200 p-5">
+                            <h2 class="font-bold text-slate-900 flex items-center gap-2 mb-1"><i
+                                    class="fa-solid fa-robot text-violet-500"></i> UPI API / auto payment tracking</h2>
+                            <p class="text-[11px] text-slate-500 mb-4 leading-relaxed">Requires a merchant UPI account
+                                with webhook support (Razorpay, Cashfree, PhonePe Business, Paytm Business). Personal
+                                UPI accounts do not support webhooks — leave this off and use cash or the static QR
+                                flow.</p>
+
+                            <div
+                                class="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 mb-4">
+                                <div class="min-w-0">
+                                    <p class="font-bold text-sm text-slate-900">Enable auto-verification</p>
+                                    <p class="text-[11px] text-slate-500 mt-0.5">When on, orders are held until your
+                                        gateway confirms payment.</p>
+                                </div>
+                                <div id="toggleAutoUpi" class="switch" onclick="toggleSwitch('autoUpi')" role="switch">
+                                </div>
+                            </div>
+
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="settings-label">Gateway provider</label>
+                                    <select id="setProvider" class="settings-input">
+                                        <option value="razorpay">Razorpay</option>
+                                        <option value="cashfree">Cashfree</option>
+                                        <option value="phonepe">PhonePe Business</option>
+                                        <option value="paytm">Paytm Business</option>
+                                        <option value="custom">Custom / other</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="settings-label">Webhook URL (paste into your gateway
+                                        dashboard)</label>
+                                    <div class="flex gap-2">
+                                        <input type="text" id="webhookUrl" readonly
+                                            class="settings-input font-mono text-[11px]">
+                                        <button onclick="copyText('webhookUrl')"
+                                            class="px-3 rounded-xl bg-white border border-slate-200 text-xs font-bold hover:bg-slate-50"><i
+                                                class="fa-solid fa-copy"></i></button>
+                                    </div>
+                                    <p class="settings-hint">Paste this into the gateway's "Payment webhook" field. It
+                                        must be reachable from the internet — use a tunnel (Cloudflare Tunnel, ngrok) if
+                                        the shop server is behind a router.</p>
+                                </div>
+                                <div>
+                                    <label class="settings-label">Webhook secret</label>
+                                    <div class="flex gap-2">
+                                        <input type="text" id="webhookSecret" readonly
+                                            class="settings-input font-mono text-[11px]">
+                                        <button onclick="copyText('webhookSecret')"
+                                            class="px-3 rounded-xl bg-white border border-slate-200 text-xs font-bold hover:bg-slate-50"><i
+                                                class="fa-solid fa-copy"></i></button>
+                                    </div>
+                                    <div class="flex gap-2 mt-2">
+                                        <button onclick="rotateWebhook()"
+                                            class="px-3 py-2 rounded-xl bg-white border border-rose-200 text-rose-600 text-[11px] font-bold hover:bg-rose-50"><i
+                                                class="fa-solid fa-arrows-rotate mr-1"></i> Rotate secret</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- QR preview -->
+                    <div class="lg:sticky lg:top-24">
+                        <div class="bg-white rounded-2xl border border-slate-200 p-5">
+                            <h2 class="font-bold text-slate-900 mb-1 flex items-center gap-2"><i
+                                    class="fa-solid fa-eye text-brand-500"></i> Live QR preview</h2>
+                            <p class="text-[11px] text-slate-500 mb-3">Scan this with any UPI app to test.</p>
+                            <div
+                                class="bg-slate-50 rounded-2xl border border-slate-200 p-4 flex items-center justify-center">
+                                <div class="bg-white rounded-xl border border-brand-100 p-2 inline-block">
+                                    <canvas id="previewQr" class="block"></canvas>
+                                </div>
+                            </div>
+                            <p id="previewUpiLabel"
+                                class="mt-3 text-center text-[11px] font-mono font-bold text-brand-700 truncate">—</p>
+                            <p class="mt-1 text-[10px] text-slate-400 text-center">Amount ₹10.00 · test only</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="loginModal" class="fixed inset-0 z-[60] hidden">
+        <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"></div>
+        <div class="relative h-full w-full flex items-center justify-center p-4">
+            <div class="pop bg-white rounded-3xl w-full max-w-sm shadow-2xl p-7">
+                <div
+                    class="w-12 h-12 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center text-lg mx-auto">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <h3 class="mt-4 text-xl font-extrabold text-slate-900 text-center">Admin login</h3>
+                <p class="text-xs text-slate-500 text-center mt-1">Enter your password to access the dashboard.</p>
+                <form onsubmit="event.preventDefault();submitLogin();" class="mt-6 space-y-3">
+                    <div class="relative">
+                        <input id="loginPass" type="password" autocomplete="current-password" placeholder="Password"
+                            class="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 focus:border-brand-500 focus:outline-none text-sm font-semibold pr-11">
+                        <button type="button" onclick="togglePassVis()"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"><i
+                                class="fa-solid fa-eye" id="passEye"></i></button>
+                    </div>
+                    <div id="loginError" class="hidden text-[11px] font-bold text-rose-600 text-center"></div>
+                    <button id="loginBtn" type="submit"
+                        class="w-full py-3 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-bold shadow-lg shadow-brand-200 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-arrow-right-to-bracket text-sm"></i> <span>Sign in</span>
+                    </button>
+                </form>
+                <a href="/"
+                    class="mt-3 block text-center py-2.5 rounded-2xl text-slate-500 hover:text-slate-800 text-xs font-semibold">Cancel</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="toasts" class="fixed bottom-5 right-5 z-[70] space-y-2 pointer-events-none"></div>
+
+    <script>
+        const $ = id => document.getElementById(id);
+        const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const SERVICE_SHORT = { passport: 'Passport', photo: 'Photo', document: 'Document', idcard: 'ID Card' };
+        const EMPTY_PRINTER = { name: '', paper: 'auto', color: 'auto', mediaType: 'auto', orient: 'auto' };
+        const SETTINGS_LOCAL = {
+            upiId: '', payeeName: '', merchantNote: '', currency: 'INR',
+            upiEnabled: true, cashEnabled: true,
+            autoUpiEnabled: false, provider: 'razorpay', webhookSecret: '',
+            printers: {
+                document: { ...EMPTY_PRINTER },
+                idcard: { ...EMPTY_PRINTER },
+                photo: { ...EMPTY_PRINTER },
+                passport: { ...EMPTY_PRINTER }
+            }
+        };
+
+        function showToast(msg, type = 'success', dur = 3600) {
+            const wrap = $('toasts');
+            const styles = { success: 'bg-slate-900 text-white', info: 'bg-white text-slate-800 border border-slate-200', error: 'bg-rose-600 text-white' };
+            const icons = { success: 'fa-circle-check text-emerald-400', info: 'fa-circle-info text-brand-600', error: 'fa-circle-exclamation' };
+            const el = document.createElement('div');
+            el.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl text-[13px] font-medium transition-all translate-y-3 opacity-0 ${styles[type]}`;
+            el.innerHTML = `<i class="fa-solid ${icons[type]}"></i><span>${esc(msg)}</span>`;
+            wrap.appendChild(el);
+            requestAnimationFrame(() => el.classList.remove('translate-y-3', 'opacity-0'));
+            setTimeout(() => { el.classList.add('translate-y-3', 'opacity-0'); setTimeout(() => el.remove(), 300); }, dur);
+        }
+        function showStatus(elId, msg, type) {
+            const el = $(elId);
+            el.classList.remove('hidden');
+            const styles = {
+                info: 'bg-blue-50 text-blue-800 border border-blue-100',
+                success: 'bg-emerald-50 text-emerald-800 border border-emerald-100',
+                error: 'bg-rose-50 text-rose-700 border border-rose-100'
+            };
+            el.className = 'mb-4 px-4 py-3 rounded-xl text-xs font-bold ' + (styles[type] || styles.info);
+            el.textContent = msg;
+            clearTimeout(showStatus['_t_' + elId]);
+            showStatus['_t_' + elId] = setTimeout(() => el.classList.add('hidden'), 4000);
+        }
+
+        /* ═══ TABS ═══ */
+        const TAB_MAP = {
+            dash: ['viewDash', 'tabDash'],
+            orders: ['viewOrders', 'tabOrders'],
+            prices: ['viewPrices', 'tabPrices'],
+            printers: ['viewPrinters', 'tabPrinters'],
+            payment: ['viewPayment', 'tabPayment']
+        };
+        function setTab(t) {
+            Object.values(TAB_MAP).forEach(([viewId, tabId]) => {
+                $(viewId).classList.add('hidden');
+                $(tabId).className = 'px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50';
+            });
+            const [viewId, tabId] = TAB_MAP[t];
+            $(viewId).classList.remove('hidden');
+            $(tabId).className = 'px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold';
+            if (t === 'prices') reloadPrices();
+            if (t === 'payment') reloadSettings();
+            if (t === 'printers') reloadPrinters();
+            if (t === 'orders') loadPendingOrders();
+            if (t === 'dash') { checkAgent(false); updatePendingBadge(); }
+        }
+
+        /* ═══ AUTH ═══ */
+        const auth = {
+            token: sessionStorage.getItem('printcraft_admin_token') || '',
+            get isOn() { return !!this.token; },
+            set(t) { this.token = t; sessionStorage.setItem('printcraft_admin_token', t); },
+            clear() { this.token = ''; sessionStorage.removeItem('printcraft_admin_token'); },
+            async verify() {
+                if (!this.token) return false;
+                try { const r = await fetch(`${SERVER.agentUrl}/api/auth`, { headers: { 'x-auth-token': this.token } }); if (!r.ok) { this.clear(); return false; } return true; }
+                catch { return false; }
+            }
+        };
+        function showLogin() {
+            $('loginModal').classList.remove('hidden');
+            $('loginError').classList.add('hidden');
+            $('logoutBtn').classList.add('hidden');
+            setTimeout(() => $('loginPass').focus(), 100);
+        }
+        function hideLogin() { $('loginModal').classList.add('hidden'); $('loginPass').value = ''; }
+        function togglePassVis() {
+            const p = $('loginPass'), e = $('passEye');
+            if (p.type === 'password') { p.type = 'text'; e.className = 'fa-solid fa-eye-slash'; }
+            else { p.type = 'password'; e.className = 'fa-solid fa-eye'; }
+        }
+        async function submitLogin() {
+            const btn = $('loginBtn'), err = $('loginError');
+            const password = $('loginPass').value;
+            if (!password) { err.textContent = 'Enter your password'; err.classList.remove('hidden'); return; }
+            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-sm"></i> <span>Signing in…</span>';
+            err.classList.add('hidden');
+            try {
+                const r = await fetch(`${SERVER.agentUrl}/api/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
+                const data = await r.json();
+                if (!r.ok) {
+                    const map = { invalid: 'Incorrect password', 'too-many-attempts': `Too many attempts — try again in ${data.retryAfter}s`, missing: 'Enter your password' };
+                    err.textContent = map[data.error] || 'Login failed'; err.classList.remove('hidden');
+                    btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket text-sm"></i> <span>Sign in</span>';
+                    return;
+                }
+                auth.set(data.token);
+                hideLogin();
+                $('logoutBtn').classList.remove('hidden');
+                showToast('Signed in', 'success');
+                bootDashboard();
+            } catch (e) { err.textContent = 'Cannot reach the local server. Is it running?'; err.classList.remove('hidden'); }
+            btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket text-sm"></i> <span>Sign in</span>';
+        }
+        async function logout() {
+            try { await fetch(`${SERVER.agentUrl}/api/logout`, { method: 'POST', headers: { 'x-auth-token': auth.token } }); } catch { }
+            auth.clear(); $('logoutBtn').classList.add('hidden');
+            showLogin(); showToast('Signed out', 'info');
+        }
+
+        /* ═══ AGENT ═══ */
+        const AGENT = { online: false, printers: [] };
+        async function checkAgent(verbose) {
+            const dot = $('agentDot'), txt = $('agentText'), adminTxt = $('adminAgentText');
+            try {
+                const ctrl = new AbortController();
+                const t = setTimeout(() => ctrl.abort(), 2500);
+                const r = await fetch(`${SERVER.agentUrl}/api/status`, { signal: ctrl.signal });
+                clearTimeout(t);
+                const data = await r.json();
+                AGENT.online = true; AGENT.printers = data.printers || [];
+                dot.className = 'dot bg-emerald-500'; txt.textContent = 'Agent online';
+                if (adminTxt) { adminTxt.textContent = `Online · ${AGENT.printers.length} printer(s)`; adminTxt.className = 'mt-2 text-sm font-bold text-emerald-600'; }
+                $('adminPrinters').textContent = `${AGENT.printers.length}`;
+                $('adminPrintersList').textContent = AGENT.printers.slice(0, 3).join(', ') || 'None detected';
+                if (verbose) showToast(`Agent online · ${AGENT.printers.length} printer(s)`, 'success');
+            } catch {
+                AGENT.online = false;
+                dot.className = 'dot bg-rose-500'; txt.textContent = 'Agent offline';
+                if (adminTxt) { adminTxt.textContent = 'Offline — check server'; adminTxt.className = 'mt-2 text-sm font-bold text-rose-600'; }
+                $('adminPrinters').textContent = '—'; $('adminPrintersList').textContent = '';
+                if (verbose) showToast('Print agent unreachable. Is the server running?', 'error', 5000);
+            }
+        }
+
+        /* ═══ PENDING ORDERS ═══ */
+        async function loadPendingOrders() {
+            try {
+                const r = await fetch(`${SERVER.agentUrl}/api/payment/pending`, { headers: { 'x-auth-token': auth.token } });
+                if (!r.ok) throw new Error('http ' + r.status);
+                const list = await r.json();
+                renderPending(list);
+                $('adminPending').textContent = list.filter(o => !o.paid).length;
+            } catch (e) {
+                $('pendingList').innerHTML = `<div class="bg-white rounded-2xl border border-slate-200 p-6 text-center text-sm text-rose-600">Could not load: ${esc(e.message)}</div>`;
+            }
+        }
+        function updatePendingBadge() { loadPendingOrders(); }
+        function renderPending(list) {
+            const wrap = $('pendingList');
+            if (!list.length) {
+                wrap.innerHTML = `<div class="bg-white rounded-2xl border border-slate-200 p-10 text-center text-sm text-slate-400">No pending orders.</div>`;
+                return;
+            }
+            wrap.innerHTML = list.map(o => {
+                const age = Math.round((Date.now() - o.createdAt) / 1000);
+                const ageTxt = age < 60 ? `${age}s ago` : age < 3600 ? `${Math.round(age / 60)}m ago` : `${Math.round(age / 3600)}h ago`;
+                const paid = o.paid;
+                const badge = paid
+                    ? `<span class="px-2 py-1 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700"><i class="fa-solid fa-check mr-1"></i>PAID</span>`
+                    : `<span class="px-2 py-1 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700"><i class="fa-solid fa-clock mr-1 pulse-dot"></i>WAITING</span>`;
+                return `<div class="bg-white rounded-2xl border ${paid ? 'border-emerald-200' : 'border-amber-200'} p-4">
+                    <div class="flex items-start justify-between gap-3 flex-wrap">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <p class="font-mono font-extrabold text-slate-900 text-sm">${esc(o.orderId)}</p>
+                                ${badge}
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-1">Service: <span class="font-bold">${esc(o.service || '—')}</span> · Created ${ageTxt}${o.paymentRef ? ' · Ref: <span class="font-mono">' + esc(o.paymentRef) + '</span>' : ''}</p>
+                        </div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-extrabold text-lg text-slate-900">₹${o.amount.toFixed(2)}</span>
+                            ${!paid ? `<button onclick="markPaid('${esc(o.orderId)}')" class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold"><i class="fa-solid fa-check mr-1"></i> Mark paid</button>` : ''}
+                            <button onclick="cancelOrder('${esc(o.orderId)}')" class="px-3 py-2 rounded-xl bg-white border border-rose-200 text-rose-600 text-xs font-bold hover:bg-rose-50"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+        async function markPaid(orderId) {
+            try {
+                const r = await fetch(`${SERVER.agentUrl}/api/payment/mark-paid`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-auth-token': auth.token },
+                    body: JSON.stringify({ orderId })
+                });
+                if (!r.ok) throw new Error('http ' + r.status);
+                showToast('Order marked as paid', 'success');
+                loadPendingOrders();
+            } catch (e) { showToast('Could not mark paid: ' + e.message, 'error', 4000); }
+        }
+        async function cancelOrder(orderId) {
+            if (!confirm('Delete this pending order? The customer\'s screen will stop waiting.')) return;
+            try {
+                const r = await fetch(`${SERVER.agentUrl}/api/payment/cancel`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-auth-token': auth.token },
+                    body: JSON.stringify({ orderId })
+                });
+                if (!r.ok) throw new Error('http ' + r.status);
+                showToast('Order cancelled', 'info');
+                loadPendingOrders();
+            } catch (e) { showToast('Could not cancel: ' + e.message, 'error', 4000); }
+        }
+
+        /* ═══ PRICES ═══ */
+        function setPriceField(path, value) { const el = document.querySelector(`[data-price="${path}"]`); if (el) el.value = value; }
+        function getPriceField(path) { const el = document.querySelector(`[data-price="${path}"]`); return el ? Number(el.value) : undefined; }
+        async function reloadPrices() {
+            try {
+                const r = await fetch(`${SERVER.agentUrl}/api/prices`);
+                if (!r.ok) throw new Error('http ' + r.status);
+                const p = await r.json();
+                setPriceField('passport.35x45', p.passport['35x45']);
+                setPriceField('passport.2x2', p.passport['2x2']);
+                setPriceField('passport.35x35', p.passport['35x35']);
+                setPriceField('photo.4x6', p.photo['4x6']);
+                setPriceField('photo.5x7', p.photo['5x7']);
+                setPriceField('photo.6x8', p.photo['6x8']);
+                setPriceField('idcard.color', p.idcard.color);
+                setPriceField('idcard.bw', p.idcard.bw);
+                setPriceField('document.bw', p.document.bw);
+                setPriceField('document.color', p.document.color);
+                setPriceField('document.binding.none', p.document.binding.none);
+                setPriceField('document.binding.staple', p.document.binding.staple);
+                setPriceField('document.binding.spiral', p.document.binding.spiral);
+                setPriceField('document.binding.hardcover', p.document.binding.hardcover);
+            } catch (e) { showStatus('pricesStatus', 'Could not load prices: ' + e.message, 'error'); }
+        }
+        async function savePrices() {
+            const btn = $('savePricesBtn');
+            const payload = {
+                passport: {
+                    '35x45': getPriceField('passport.35x45'),
+                    '2x2': getPriceField('passport.2x2'),
+                    '35x35': getPriceField('passport.35x35')
+                },
+                photo: {
+                    '4x6': getPriceField('photo.4x6'),
+                    '5x7': getPriceField('photo.5x7'),
+                    '6x8': getPriceField('photo.6x8')
+                },
+                idcard: { color: getPriceField('idcard.color'), bw: getPriceField('idcard.bw') },
+                document: {
+                    bw: getPriceField('document.bw'), color: getPriceField('document.color'),
+                    binding: {
+                        none: getPriceField('document.binding.none'),
+                        staple: getPriceField('document.binding.staple'),
+                        spiral: getPriceField('document.binding.spiral'),
+                        hardcover: getPriceField('document.binding.hardcover')
+                    }
+                }
+            };
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Saving…';
+            try {
+                const r = await fetch(`${SERVER.agentUrl}/api/prices`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-auth-token': auth.token },
+                    body: JSON.stringify(payload)
+                });
+                const data = await r.json();
+                if (!r.ok) throw new Error(data.error || 'save failed');
+                showToast('Prices saved', 'success');
+                showStatus('pricesStatus', 'Prices saved — customers see them on next refresh', 'success');
+            } catch (e) {
+                showToast('Could not save prices: ' + e.message, 'error', 5000);
+                showStatus('pricesStatus', 'Save failed: ' + e.message, 'error');
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-1"></i> Save prices';
+        }
+
+        /* ═══ PRINTER ROUTING ═══ */
+        function setPrinterField(path, value) { const el = document.querySelector(`[data-printer="${path}"]`); if (el) el.value = value; }
+        function getPrinterField(path) { const el = document.querySelector(`[data-printer="${path}"]`); return el ? el.value : ''; }
+        async function loadDetectedPrinters() {
+            try {
+                const r = await fetch(`${SERVER.agentUrl}/api/status`);
+                if (!r.ok) throw new Error('http ' + r.status);
+                const data = await r.json();
+                const printers = data.printers || [];
+                const listEl = $('printerList');
+                listEl.innerHTML = printers.map(n => `<option value="${esc(n)}"></option>`).join('');
+                $('detectedPrintersList').textContent = printers.length ? printers.join(' · ') : '(no printers detected)';
+            } catch {
+                $('detectedPrintersList').textContent = '(could not reach agent)';
+            }
+        }
+        async function reloadPrinters() {
+            try {
+                const r = await fetch(`${SERVER.agentUrl}/api/settings`);
+                if (!r.ok) throw new Error('http ' + r.status);
+                const s = await r.json();
+                const printers = s.printers || {};
+                ['document', 'idcard', 'photo', 'passport'].forEach(svc => {
+                    const p = printers[svc] || {};
+                    setPrinterField(`${svc}.name`, p.name || '');
+                    setPrinterField(`${svc}.paper`, p.paper || 'auto');
+                    setPrinterField(`${svc}.color`, p.color || 'auto');
+                    setPrinterField(`${svc}.mediaType`, p.mediaType || 'auto');
+                    setPrinterField(`${svc}.orient`, p.orient || 'auto');
+                });
+                loadDetectedPrinters();
+            } catch (e) { showStatus('printersStatus', 'Could not load: ' + e.message, 'error'); }
+        }
+        async function savePrinters() {
+            const btn = $('savePrintersBtn');
+            const printersPayload = {};
+            ['document', 'idcard', 'photo', 'passport'].forEach(svc => {
+                printersPayload[svc] = {
+                    name: getPrinterField(`${svc}.name`),
+                    paper: getPrinterField(`${svc}.paper`),
+                    color: getPrinterField(`${svc}.color`),
+                    mediaType: getPrinterField(`${svc}.mediaType`),
+                    orient: getPrinterField(`${svc}.orient`)
+                };
+            });
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Saving…';
+            try {
+                const cur = await (await fetch(`${SERVER.agentUrl}/api/settings`)).json();
+                const body = { ...cur, printers: printersPayload };
+                const r = await fetch(`${SERVER.agentUrl}/api/settings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-auth-token': auth.token },
+                    body: JSON.stringify(body)
+                });
+                const data = await r.json();
+                if (!r.ok) throw new Error(data.error || 'save failed');
+                showToast('Printer routing saved', 'success');
+                showStatus('printersStatus', 'Saved — the agent will route new jobs according to these profiles', 'success');
+            } catch (e) {
+                showToast('Could not save: ' + e.message, 'error', 5000);
+                showStatus('printersStatus', 'Save failed: ' + e.message, 'error');
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-1"></i> Save printer routing';
+        }
+
+        /* ═══ PAYMENT SETTINGS ═══ */
+        let settings = JSON.parse(JSON.stringify(SETTINGS_LOCAL));
+        function renderSettingsForm() {
+            $('setUpiId').value = settings.upiId || '';
+            $('setPayeeName').value = settings.payeeName || '';
+            $('setNote').value = settings.merchantNote || '';
+            $('setCurrency').value = settings.currency || 'INR';
+            $('setProvider').value = settings.provider || 'razorpay';
+            $('toggleCash').classList.toggle('on', settings.cashEnabled !== false);
+            $('toggleUpi').classList.toggle('on', settings.upiEnabled !== false);
+            $('toggleAutoUpi').classList.toggle('on', settings.autoUpiEnabled === true);
+            $('previewUpiLabel').textContent = settings.upiId || '—';
+            const base = SERVER.agentUrl || window.location.origin;
+            $('webhookUrl').value = `${base}/api/payment/webhook/${settings.webhookSecret || ''}`;
+            $('webhookSecret').value = settings.webhookSecret || '';
+            drawPreviewQr();
+        }
+        function toggleSwitch(which) {
+            if (which === 'upi') settings.upiEnabled = !settings.upiEnabled;
+            else if (which === 'cash') settings.cashEnabled = !settings.cashEnabled;
+            else if (which === 'autoUpi') settings.autoUpiEnabled = !settings.autoUpiEnabled;
+            renderSettingsForm();
+        }
+        function buildUpiUrl(amount) {
+            const upiId = (settings.upiId || '').trim() || 'printcraft@upi';
+            const name = (settings.payeeName || '').trim() || 'PrintCraft';
+            const note = (settings.merchantNote || '').trim();
+            const cur = (settings.currency || 'INR').trim() || 'INR';
+            let url = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(name)}&am=${amount.toFixed(2)}&cu=${encodeURIComponent(cur)}`;
+            if (note) url += `&tn=${encodeURIComponent(note)}`;
+            return url;
+        }
+        function drawPreviewQr() {
+            const canvas = $('previewQr');
+            const url = buildUpiUrl(10);
+            if (typeof qrcode !== 'function') {
+                canvas.width = 180; canvas.height = 180;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#eef2ff'; ctx.fillRect(0, 0, 180, 180);
+                ctx.fillStyle = '#4f46e5'; ctx.font = 'bold 12px Inter'; ctx.textAlign = 'center';
+                ctx.fillText('QR lib missing', 90, 92);
+                return;
+            }
+            try {
+                const qr = qrcode(0, 'M');
+                qr.addData(url);
+                qr.make();
+                const count = qr.getModuleCount();
+                const size = 180;
+                const cell = size / count;
+                canvas.width = size; canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, size, size);
+                ctx.fillStyle = '#1e1b4b';
+                for (let r = 0; r < count; r++) {
+                    for (let c = 0; c < count; c++) {
+                        if (qr.isDark(r, c)) {
+                            const x0 = Math.round(c * cell);
+                            const y0 = Math.round(r * cell);
+                            const x1 = Math.round((c + 1) * cell);
+                            const y1 = Math.round((r + 1) * cell);
+                            ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+                        }
+                    }
+                }
+            } catch (e) { console.error('QR preview failed:', e); }
+        }
+        async function reloadSettings() {
+            try {
+                const r = await fetch(`${SERVER.agentUrl}/api/settings`);
+                if (!r.ok) throw new Error('http ' + r.status);
+                const s = await r.json();
+                settings = { ...SETTINGS_LOCAL, ...s };
+                renderSettingsForm();
+            } catch (e) { showStatus('settingsStatus', 'Could not load: ' + e.message, 'error'); }
+        }
+        async function saveSettings() {
+            const btn = $('saveSettingsBtn');
+            const payload = {
+                upiId: $('setUpiId').value,
+                payeeName: $('setPayeeName').value,
+                merchantNote: $('setNote').value,
+                currency: $('setCurrency').value,
+                provider: $('setProvider').value,
+                upiEnabled: settings.upiEnabled !== false,
+                cashEnabled: settings.cashEnabled !== false,
+                autoUpiEnabled: settings.autoUpiEnabled === true
+            };
+            if (payload.upiEnabled && !payload.upiId.trim()) { showToast('UPI ID required when UPI is enabled', 'error'); return; }
+            if (payload.upiEnabled && !payload.upiId.includes('@')) { showToast('UPI ID should contain "@"', 'error'); return; }
+            if (!payload.upiEnabled && !payload.cashEnabled) {
+                if (!confirm('Both methods off — customers won\'t be able to check out. Save anyway?')) return;
+            }
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Saving…';
+            try {
+                const cur = await (await fetch(`${SERVER.agentUrl}/api/settings`)).json();
+                const body = { ...cur, ...payload };
+                const r = await fetch(`${SERVER.agentUrl}/api/settings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-auth-token': auth.token },
+                    body: JSON.stringify(body)
+                });
+                const data = await r.json();
+                if (!r.ok) throw new Error(data.error || 'save failed');
+                settings = { ...SETTINGS_LOCAL, ...(data.settings || {}) };
+                renderSettingsForm();
+                showToast('Payment settings saved', 'success');
+                showStatus('settingsStatus', 'Saved — customers will see the update on next refresh', 'success');
+                $('adminAutoUpi').textContent = settings.autoUpiEnabled ? 'Enabled · ' + settings.provider : 'Disabled';
+                $('adminAutoUpi').className = 'mt-2 text-sm font-bold ' + (settings.autoUpiEnabled ? 'text-emerald-600' : 'text-slate-500');
+            } catch (e) {
+                showToast('Could not save: ' + e.message, 'error', 5000);
+                showStatus('settingsStatus', 'Save failed: ' + e.message, 'error');
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-1"></i> Save payment settings';
+        }
+        async function rotateWebhook() {
+            if (!confirm('Rotate webhook secret? Your gateway config must be updated with the new URL.')) return;
+            try {
+                const r = await fetch(`${SERVER.agentUrl}/api/settings/rotate-webhook`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-auth-token': auth.token }
+                });
+                const data = await r.json();
+                if (!r.ok) throw new Error(data.error || 'rotate failed');
+                settings.webhookSecret = data.webhookSecret;
+                renderSettingsForm();
+                showToast('Webhook secret rotated', 'success');
+            } catch (e) { showToast('Could not rotate: ' + e.message, 'error', 5000); }
+        }
+        function copyText(id) {
+            const el = $(id); if (!el) return;
+            el.select(); document.execCommand('copy');
+            showToast('Copied to clipboard', 'success', 2000);
+        }
+        ['setUpiId', 'setPayeeName', 'setNote', 'setCurrency', 'setProvider'].forEach(id => {
+            const el = $(id); if (!el) return;
+            el.addEventListener('input', () => {
+                settings.upiId = $('setUpiId').value;
+                settings.payeeName = $('setPayeeName').value;
+                settings.merchantNote = $('setNote').value;
+                settings.currency = $('setCurrency').value;
+                settings.provider = $('setProvider').value;
+                $('previewUpiLabel').textContent = settings.upiId || '—';
+                drawPreviewQr();
+            });
+            el.addEventListener('change', () => { el.dispatchEvent(new Event('input')); });
+        });
+
+        /* ═══ SIMULATE ═══ */
+        function simulateJob() {
+            showToast('Test job simulated — check the studio page for a real flow', 'info', 4000);
+        }
+
+        /* ═══ BOOT ═══ */
+        function bootDashboard() {
+            checkAgent(false);
+            loadPendingOrders();
+            setInterval(() => checkAgent(false), 15000);
+            setInterval(() => { if (!$('viewOrders').classList.contains('hidden') || !$('viewDash').classList.contains('hidden')) loadPendingOrders(); }, 8000);
+            reloadSettings();
+            reloadPrices();
+            loadDetectedPrinters();
+        }
+        (async () => {
+            if (await auth.verify()) {
+                $('logoutBtn').classList.remove('hidden');
+                hideLogin();
+                bootDashboard();
+            } else {
+                showLogin();
+            }
+        })();
+    </script>
+</body>
+
+</html>
