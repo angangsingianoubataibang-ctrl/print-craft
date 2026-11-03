@@ -1,0 +1,26 @@
+{
+  "passport": {
+    "35x45": 50,
+    "2x2": 50,
+    "35x35": 50
+  },
+  "photo": {
+    "4x6": 25,
+    "5x7": 40,
+    "6x8": 50
+  },
+  "document": {
+    "bw": 4,
+    "color": 10,
+    "binding": {
+      "none": 0,
+      "staple": 20,
+      "spiral": 50,
+      "hardcover": 150
+    }
+  },
+  "idcard": {
+    "color": 10,
+    "bw": 4
+  }
+}

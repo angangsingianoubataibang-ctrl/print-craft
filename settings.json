@@ -1,0 +1,44 @@
+{
+  "upiId": "9378022836@pthdfc",
+  "payeeName": "PrintCraft",
+  "merchantNote": "Print job",
+  "currency": "INR",
+  "upiEnabled": true,
+  "cashEnabled": true,
+  "autoUpiEnabled": false,
+  "provider": "razorpay",
+  "webhookSecret": "wh_b9e6d8dffeccf99b0ccf4ef1734d30561deaed94b9f53921",
+  "shopOpen": true,
+  "shopOpenLabel": "Thong Hange",
+  "shopClosedLabel": "Thong Hangdriko",
+  "printers": {
+    "document": {
+      "name": "Canon G3030 series",
+      "paper": "A4",
+      "color": "auto",
+      "mediaType": "plain",
+      "orient": "auto"
+    },
+    "idcard": {
+      "name": "Canon G3030 series",
+      "paper": "A4",
+      "color": "auto",
+      "mediaType": "plain",
+      "orient": "auto"
+    },
+    "photo": {
+      "name": "Canon G3030 series",
+      "paper": "auto",
+      "color": "color",
+      "mediaType": "photo",
+      "orient": "auto"
+    },
+    "passport": {
+      "name": "Canon G3030 series",
+      "paper": "4x6",
+      "color": "color",
+      "mediaType": "photo",
+      "orient": "auto"
+    }
+  }
+}
